@@ -1,0 +1,10 @@
+*.pyc
+*.mo
+.project
+.pydevproject
+.settings/*
+.env/*
+.idea/*
+static/
+src/
+development_settings.py
