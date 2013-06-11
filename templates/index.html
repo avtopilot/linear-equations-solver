@@ -5,18 +5,31 @@
 {% block content %}
 
     <p>Enter the system of linear algebraic equations:</p>
-    <form method="post" action="{% url solve %}">
-        {% csrf_token %}
+    <div style="float: left;">
+        <form method="post" action="{% url solve %}">
+            {% csrf_token %}
 
-        <textarea name='equations' cols="30" rows="20"></textarea> <p>
+            <textarea name='equations' cols="30" rows="20"></textarea> <p>
 
-        <input type="submit" value="solve">
-    </form>
+            <input type="submit" value="solve">
+        </form>
+    </div>
 
+    <div style="float: left; margin-left: 40px;">
+        <p>Use the following symbols to:</p>
+        <p>1. tabs, enter or ';' to separate equations;</p>
+        <p>2. lowercase letter to name variables;</p>
+        <p>3. 'E' to create exponent of a number.</p>
+        <p>You can't use any brackets.</p>
+        <p>Each variable can be used several times in the same equation.</p>
+    </div>
+
+    <div style="clear:both">
     {% if error %}
         {{ error }}
     {% else %}
         {{ result }}
     {% endif %}
+    </div>
 
 {% endblock %}
