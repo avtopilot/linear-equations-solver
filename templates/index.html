@@ -6,7 +6,7 @@
 
     <p>Enter the system of linear algebraic equations:</p>
     <div style="float: left;">
-        <form method="post" action="{% url solve %}">
+        <form method="post" action="{% url solve %}" id="equation">
             {% csrf_token %}
 
             <textarea name='equations' cols="30" rows="20"></textarea> <p>
@@ -18,18 +18,14 @@
     <div style="float: left; margin-left: 40px;">
         <p>Rules of linear equations input:</p>
         <p>1. use tabs, enter or ';' to separate equations;</p>
-        <p>2. start variables' names with lowercase letters;</p>
+        <p>2. start variables' names with lowercase letters (like 'x' or 'x12');</p>
         <p>3. use 'E' to create the exponent of a number.</p>
         <p>You can't use any brackets.</p>
         <p>Each variable can be used several times in the same equation.</p>
     </div>
 
-    <div style="clear:both">
-    {% if error %}
-        {{ error }}
-    {% else %}
-        {{ result }}
-    {% endif %}
+    <div style="clear:both" id='result'>
+        {% include 'result.html' with error=error result=result %}
     </div>
 
 {% endblock %}

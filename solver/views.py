@@ -18,7 +18,10 @@ def solve(request):
 
         if error:
             context['error'] = error
-            return render(request, 'index.html', context)
+            if request.is_ajax():
+                return render(request, 'result.html', context)
+            else:
+                return render(request, 'index.html', context)
 
         vector = []
         for equation in equations_variables:
@@ -41,6 +44,9 @@ def solve(request):
             context['result'] = solve_linear_system_LU(system, variables_list)
         except:
             context['error'] = u'System not valid'
+
+        if request.is_ajax():
+            return render(request, 'result.html', context)
 
     return render(request, 'index.html', context)
 
