@@ -60,7 +60,7 @@ def _get_variables(equations):
     equations = re.split(r'[^ \-+*/=.,\w\d]+', equations)
 
     for equation in equations:
-        equation = equation.replace(' ', '')
+        equation = equation.replace(' ', '').replace(',', '.')
 
         #for better split replace some coefficients
         equation = equation.replace('E-', 'N').replace('E+', 'P')
