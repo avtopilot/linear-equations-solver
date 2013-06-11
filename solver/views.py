@@ -22,6 +22,11 @@ def solve(request):
 
         vector = []
         for equation in equations_variables:
+            
+            #add free term if it doesn't exist
+            if u'' not in equation:
+                equation[u''] = 0
+
             for var in variables_list:
                 if not var in equation:
                     equation[var] = 0
