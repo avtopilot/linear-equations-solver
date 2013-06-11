@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import re
+import operator
+from sympy import Matrix
+from sympy.solvers.solvers import solve_linear_system_LU
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
 
@@ -10,50 +13,104 @@ def solve(request):
     context = {}
     if 'equations' in request.POST:
 
-        #separate of each equation
-        equations = re.split(r'[^ \-+*/=.,\w\d]+', request.POST['equations'])
+        #parse systems
+        error, variables_list, equations_variables = _get_variables(request.POST['equations'])
 
-        for equation in equations:
-            #TODO: check on A-Z
-            equation = equation.replace(' ', '')
+        if error:
+            context['error'] = error
+            return render(request, 'index.html', context)
 
-            #for better split replace some coefficients
-            equation = equation.replace('E-', 'N').replace('E+', 'P')
+        vector = []
+        for equation in equations_variables:
+            for var in variables_list:
+                if not var in equation:
+                    equation[var] = 0
+            equation_sorted = sorted(equation.iteritems(), key=operator.itemgetter(0), reverse=True)
 
-            variables = re.split(r'=', equation)
+            temp_vector = []
+            for var in equation_sorted:
+                number = var[1]
+                if not var[0]:
+                    number = -float(number)
+                if number == u'' or number == u'-':
+                    number = u'%s1' % number
+                temp_vector.append(float(number))
 
-            if not len(variables) == 2:
-                context['error'] = u'Invalid data ("=")'
-                return render(request, 'index.html', context)
+            vector.append(temp_vector)
 
-            #get variables at the left-side of equation
-            temp_variables = re.split(r'[\+]+', variables[0])
-            left_variables = []
-
-            #make proper variables negative
-            for left_var in temp_variables:
-                temp = re.split(r'[\-]+', left_var)
-                left_variables.append(temp[0])
-                if len(temp) > 1:
-                    for t in temp[1:]:
-                        left_variables.append(u'-%s' % t)
-
-            #get variables at the right-side of equation and replace it to the left-side
-            temp_variables = re.split(r'[\-]+', variables[1])
-
-            #make proper variables negative
-            for left_var in temp_variables:
-                temp = re.split(r'[\+]+', left_var)
-                left_variables.append(temp[0])
-                if len(temp) > 1:
-                    for t in temp[1:]:
-                        left_variables.append(u'-%s' % t)
-
-
-            for left_var in left_variables:
-                #back previous replacement
-                left_var = left_var.replace('N', 'E-').replace('P', 'E+')
-
-                variable = re.match(r'(?P<var_value>-?\d*([.,]\d*((E)(-|\+))?)?[\d]*)?[* ]?(?P<var>[a-z]?\d*)', left_var)
+        system = Matrix(vector)
+        try:
+            context['result'] = solve_linear_system_LU(system, variables_list)
+        except:
+            context['error'] = u'System not valid'
 
     return render(request, 'index.html', context)
+
+
+def _get_variables(equations):
+    variables_list = []
+    equations_variables = []
+    error = ''
+
+    if re.findall(r'\(|\)+', equations):
+        return u"Please open the brackets in the expressions and try again", variables_list, equations_variables
+
+    if re.findall(r'[A-D]+|[F-Z]+]', equations):
+        return u"Please use only lowercase letter for variable and try again", variables_list, equations_variables
+
+    #separate of each equation
+    equations = re.split(r'[^ \-+*/=.,\w\d]+', equations)
+
+    for equation in equations:
+        #TODO: check on A-Z and ( )
+        equation = equation.replace(' ', '')
+
+        #for better split replace some coefficients
+        equation = equation.replace('E-', 'N').replace('E+', 'P')
+
+        variables = re.split(r'=', equation)
+
+        if not len(variables) == 2:
+            return u'Invalid data ("=")', variables_list, equations_variables
+
+        #get variables at the left-side of equation
+        temp_variables = re.split(r'[\+]+', variables[0])
+        left_variables = []
+
+        #make proper variables negative
+        for left_var in temp_variables:
+            temp = re.split(r'[\-]+', left_var)
+            left_variables.append(temp[0])
+            if len(temp) > 1:
+                for t in temp[1:]:
+                    left_variables.append(u'-%s' % t)
+
+        #get variables at the right-side of equation and replace it to the left-side
+        if not variables[1][0] == '-':
+            variables[1] = u'+%s' % variables[1]
+        temp_variables = re.split(r'[\-]+', variables[1])
+
+        #make proper variables negative
+        for left_var in temp_variables:
+            temp = re.split(r'[\+]+', left_var)
+            left_variables.append(temp[0])
+            if len(temp) > 1:
+                for t in temp[1:]:
+                    left_variables.append(u'-%s' % t)
+
+        #split each summand onto variable and coefficient
+        variable_dict = {}
+        for left_var in left_variables:
+            #back previous replacement
+            left_var = left_var.replace('N', 'E-').replace('P', 'E+')
+
+            variable = re.match(r'(?P<var_value>-?\d*([.,]\d*((E)(-|\+))?)?[\d]*)?[* ]?(?P<var>[a-z]?\d*)', left_var)
+
+            variable_dict[variable.group('var')] = variable.group('var_value')
+
+            if not variable.group('var') in variables_list and variable.group('var'):
+                variables_list.append(variable.group('var'))
+
+        equations_variables.append(variable_dict)
+
+    return error, variables_list, equations_variables
