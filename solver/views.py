@@ -27,14 +27,7 @@ def solve(request):
                     equation[var] = 0
             equation_sorted = sorted(equation.iteritems(), key=operator.itemgetter(0), reverse=True)
 
-            temp_vector = []
-            for var in equation_sorted:
-                number = var[1]
-                if not var[0]:
-                    number = -float(number)
-                if number == u'' or number == u'-':
-                    number = u'%s1' % number
-                temp_vector.append(float(number))
+            temp_vector = [var[1] for var in equation_sorted]
 
             vector.append(temp_vector)
 
@@ -88,7 +81,10 @@ def _get_variables(equations):
 
             variable = re.match(r'(?P<var_value>-?\d*([.,]\d*((E)(-|\+))?)?[\d]*)?[* ]?(?P<var>[a-z]?\d*)', left_var)
 
-            variable_dict[variable.group('var')] = variable.group('var_value')
+            if variable.group('var') in variable_dict:
+                variable_dict[variable.group('var')] += _convert_to_float(variable.group('var'), variable.group('var_value'))
+            else:
+                variable_dict[variable.group('var')] = _convert_to_float(variable.group('var'), variable.group('var_value'))
 
             if not variable.group('var') in variables_list and variable.group('var'):
                 variables_list.append(variable.group('var'))
@@ -105,9 +101,20 @@ def _get_equation_terms(variables, operand1, operand2):
     #make proper variables negative
     for left_var in temp_variables:
         temp = re.split(operand2, left_var)
-        left_variables.append(temp[0])
+        if temp[0]:
+            left_variables.append(temp[0])
         if len(temp) > 1:
             for t in temp[1:]:
                 left_variables.append(u'-%s' % t)
 
     return left_variables
+
+
+def _convert_to_float(variable, value):
+    number = value
+    if not variable:
+        number = -float(number)
+    if number == u'' or number == u'-':
+        number = u'%s1' % number
+
+    return float(number)
