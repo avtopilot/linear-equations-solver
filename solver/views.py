@@ -62,7 +62,6 @@ def _get_variables(equations):
     equations = re.split(r'[^ \-+*/=.,\w\d]+', equations)
 
     for equation in equations:
-        #TODO: check on A-Z and ( )
         equation = equation.replace(' ', '')
 
         #for better split replace some coefficients
@@ -74,29 +73,12 @@ def _get_variables(equations):
             return u'Invalid data ("=")', variables_list, equations_variables
 
         #get variables at the left-side of equation
-        temp_variables = re.split(r'[\+]+', variables[0])
-        left_variables = []
-
-        #make proper variables negative
-        for left_var in temp_variables:
-            temp = re.split(r'[\-]+', left_var)
-            left_variables.append(temp[0])
-            if len(temp) > 1:
-                for t in temp[1:]:
-                    left_variables.append(u'-%s' % t)
+        left_variables = _get_equation_terms(variables[0], r'[\+]+', r'[\-]+')
 
         #get variables at the right-side of equation and replace it to the left-side
         if not variables[1][0] == '-':
             variables[1] = u'+%s' % variables[1]
-        temp_variables = re.split(r'[\-]+', variables[1])
-
-        #make proper variables negative
-        for left_var in temp_variables:
-            temp = re.split(r'[\+]+', left_var)
-            left_variables.append(temp[0])
-            if len(temp) > 1:
-                for t in temp[1:]:
-                    left_variables.append(u'-%s' % t)
+        left_variables += _get_equation_terms(variables[1], r'[\-]+', r'[\+]+')
 
         #split each summand onto variable and coefficient
         variable_dict = {}
@@ -114,3 +96,18 @@ def _get_variables(equations):
         equations_variables.append(variable_dict)
 
     return error, variables_list, equations_variables
+
+
+def _get_equation_terms(variables, operand1, operand2):
+    left_variables = []
+    temp_variables = re.split(operand1, variables)
+
+    #make proper variables negative
+    for left_var in temp_variables:
+        temp = re.split(operand2, left_var)
+        left_variables.append(temp[0])
+        if len(temp) > 1:
+            for t in temp[1:]:
+                left_variables.append(u'-%s' % t)
+
+    return left_variables
